@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valorant Player Stats</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { max-width: 800px; margin: auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f4f4f4; }
+        canvas { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Valorant Player Stats</h1>
+        <input type="text" id="playerName" placeholder="Enter player name">
+        <button onclick="fetchStats()">Get Stats</button>
+        
+        <table id="statsTable">
+            <thead>
+                <tr>
+                    <th>Agent</th><th>ACS</th><th>ADR</th><th>K/D</th><th>KAST</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        
+        <canvas id="roleChart"></canvas>
+    </div>
+    
+    <script>
+        async function fetchStats() {
+            const playerName = document.getElementById("playerName").value;
+            if (!playerName) return alert("Please enter a player name");
+            
+            const response = await fetch(http://127.0.0.1:5000/stats?player_name=${playerName});
+            const data = await response.json();
+            
+            if (data.error) {
+                alert("Player not found");
+                return;
+            }
+            
+            displayStats(data.stats);
+            fetchRoleAnalysis();
+        }
+        
+        function displayStats(stats) {
+            const tbody = document.querySelector("#statsTable tbody");
+            tbody.innerHTML = "";
+            
+            stats.forEach(stat => {
+                const row = `<tr>
+                    <td>${stat.Agent}</td>
+                    <td>${stat.ACS}</td>
+                    <td>${stat.ADR}</td>
+                    <td>${stat["K:D"]}</td>
+                    <td>${stat.KAST}%</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+        
+        async function fetchRoleAnalysis() {
+            const response = await fetch("http://127.0.0.1:5000/analyze");
+            const data = await response.json();
+            
+            if (data.error) return;
+            
+            const roles = {};
+            data.forEach(entry => {
+                if (!roles[entry.Role]) roles[entry.Role] = 0;
+                roles[entry.Role] += entry["Success Score"];
+            });
+            
+            displayChart(roles);
+        }
+        
+        function displayChart(roleData) {
+            const ctx = document.getElementById("roleChart").getContext("2d");
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: Object.keys(roleData),
+                    datasets: [{
+                        label: "Success Score",
+                        data: Object.values(roleData),
+                        backgroundColor: ["red", "blue", "green", "purple"],
+                    }]
+                }
+            });
+        }
+    </script>
+</body>
+</html>
